@@ -65,6 +65,8 @@ class Hospital:
         self.y = y
         # amb_time array represents the time each ambulance have already spent.
         # NOTE: this should be sorted in a decreasing order (larger value first).
+
+        # TODO: Handle for ambulance count after dropping
         self.num_amb = num_amb
         self.amb_time = [0] * num_amb
         return
@@ -75,17 +77,9 @@ class Hospital:
     def prettify(self):
         return {self.hid: (self.x, self.y)}
 
-    def decamb(self, t):
-        self.amb_time[t] -= 1
-        if self.amb_time[t] == 0: del self.amb_time[t]
-        return
-
-    def incamb(self, t):
-        if t not in self.amb_time: self.amb_time[t] = 0
-        self.amb_time[t] += 1
-        return
-
-    def rescue(self, pers, hospitals):
+    def rescue(self, pers, end_hospital):
+        if self.num_amb == 0:
+            raise IllegalPlanError('No ambulance left at the hospital: %s' % self)
         if 4 < len(pers):
             raise IllegalPlanError('Cannot rescue more than four people at once: %s' % pers)
         already_rescued = list(filter(lambda p: p.rescued, pers))
@@ -99,18 +93,28 @@ class Hospital:
         for p in pers:
             t += take_time(start, p)
             start = p
+
+        t += len(pers)
+
+        # TODO: Change to user-input end hospital
+
+        """"
         # look for closest hospital
-        min_hosp = 0
-        min_hosp_distance = None
-        for hosp in hospitals:
-            tmp_dist = take_time(start, hosp)
-            if not min_hosp_distance:
-                min_hosp_distance = tmp_dist
-                min_hosp = hosp
-            elif tmp_dist < min_hosp_distance:
-                min_hosp_distance = tmp_dist
-                min_hosp = hosp
-        t += min_hosp_distance
+        # min_hosp = 0
+        # min_hosp_distance = None
+        # print(hospitals)
+        # for hosp in hospitals:
+        #     tmp_dist = take_time(start, hosp)
+        #     if not min_hosp_distance:
+        #         min_hosp_distance = tmp_dist
+        #         min_hosp = hosp
+        #     elif tmp_dist < min_hosp_distance:
+        #         min_hosp_distance = tmp_dist
+        #         min_hosp = hosp
+        # t += min_hosp_distance
+        """
+
+        t += take_time(start, end_hospital)
 
         # try to schedule from the busiest ambulance at the hospital.
         for (i, t0) in enumerate(self.amb_time):
@@ -119,17 +123,25 @@ class Hospital:
             raise IllegalPlanError('Either person cannot make it: %s' % pers)
         # proceed the time.
         self.amb_time[i] += t
+
+        # TODO: Send the ambulance to next hospital
+
+        end_hospital.num_amb += 1
+        end_hospital.amb_time.append(self.amb_time[i])
+
+        self.num_amb -= 1
+        self.amb_time.pop(i)
+
         # keep it sorted.
-        self.amb_time.sort()
-        self.amb_time.reverse()
+        self.amb_time.sort(reverse=True)
         for p in pers:
             p.rescued = True
-        print('Rescued:', ' and '.join(map(str, pers)), 'taking', t, '|ended at hospital', min_hosp)
+        print('Rescued:', ' and '.join(map(str, pers)), 'taking', t, '|ended at hospital', end_hospital)
         return pers
 
 
 # read_data
-def read_data(fname):
+def read_data(fname="data.txt"):
     print('Reading data:', fname)
     persons = []
     hospitals = []
@@ -159,7 +171,6 @@ def read_data(fname):
 
 # read_results
 def readresults(persons, hospitals, fname='result.txt'):
-    print('Reading results...')
 
     # Regex to extract the patterns
     p1 = re.compile(r'(\d+\s*:\s*\(\s*\d+\s*,\s*\d+(\s*,\s*\d+)?\s*\))')
@@ -199,19 +210,29 @@ def readresults(persons, hospitals, fname='result.txt'):
             continue
         try:
             hos = None
+            end_hos = None
             rescue_persons = []
-            for (i, (w, z)) in enumerate(p1.findall(line)):
+            groups = p1.findall(line)
+            groups_length = len(groups)
+
+            for (i, (w, z)) in enumerate(groups):
                 m = p2.match(w)
                 if m:
                     # Hospital n:(x,y)
-                    if i != 0:
+                    if i != 0 and i != groups_length - 1:
                         raise FormatSyntaxError('Specify a person now: %r' % line)
                     (a, b, c) = map(int, m.groups())
                     if a <= 0 or len(hospitals) < a:
                         raise FormatSyntaxError('Illegal hospital id: %d' % a)
-                    hos = hospitals[a - 1]
-                    if hos.x != b or hos.y != c:
-                        raise DataMismatchError('Hospital mismatch: %s != %d:%s' % (hos, a, (b, c)))
+                    if i == 0:
+                        hos = hospitals[a - 1]
+                        if hos.x != b or hos.y != c:
+                            raise DataMismatchError('Hospital mismatch: %s != %d:%s' % (hos, a, (b, c)))
+                    else:
+                        end_hos = hospitals[a - 1]
+                        if end_hos.x != b or end_hos.y != c:
+                            raise DataMismatchError('Hospital mismatch: %s != %d:%s' % (end_hos, a, (b, c)))
+
                     continue
                 m = p3.match(w)
                 if m:
@@ -232,7 +253,9 @@ def readresults(persons, hospitals, fname='result.txt'):
             if not hos or not rescue_persons:
                 print('!!! Insufficient data: %r' % line)
                 continue
-            pers = hos.rescue(rescue_persons, hospitals)
+            if not hos or not end_hos:
+                raise FormatSyntaxError('Either start hospital or end hospital is not defined: %s' % line)
+            pers = hos.rescue(rescue_persons, end_hos)
             if hos.hid in res:
                 res[hos.hid].extend(pers)
             else:
@@ -265,6 +288,7 @@ def prettify(self):
 
 
 def plot(_persons, _hospitals, fname="result.txt"):
+    # TODO: Plot bug
     global persons, hospitals
     persons = _persons
     persons = {key: val for person in persons for key, val in person.prettify().items()}
@@ -352,15 +376,11 @@ def plot(_persons, _hospitals, fname="result.txt"):
 def my_solution(pers, hosps):
     """
     Place your custom solution here
-
     Your code SHOULD create a result.txt file consisting of the solution as per the output format
-
     As such, you do not need to read the data and can use the read_data() function directly.
     However, you're free to read the data if you wish to use a separate data structure
-
     IO Format:
         Refer to the Readme: "For Languages other than python" to know the input and output formats
-
     :return: Create a file named "result.txt" following the output format
     """
 
@@ -377,6 +397,7 @@ if __name__ == "__main__":
     print("Using data.txt as input")
     (persons, hospitals) = read_data("data.txt")
     my_solution(persons, hospitals)
-    print(persons)
     readresults(persons, hospitals)
+
+    # Comment the below line to disable plot
     plot(persons, hospitals)

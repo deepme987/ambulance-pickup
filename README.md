@@ -1,20 +1,41 @@
 
 # Ambulance Pickup Problem
 
+## Contact:
+
+```angular2html
+Deep Mehta
+Email: dmehta@nyu.edu
+Contact: (347)-358-4883
+```
+
+## Notes:
+
+   1. You are responsible to check for the order in which the ambulances are departed. 
+i.e. if A has 3 ambulances, there is a path B -> A making 4 total at A, 
+you will need to print the result B -> A before departing the 4th ambulance from A.
+   2. If you run into any format issues, the program will only leave an error output, but NOT stop the execution.
+Even if your output is being validated, it may have some errors printed (Sample output has few such errors displayed)
+   3. If you find any bugs in the code, feel free to let us know, and we'll fix it for you.
+   4. Kindly make your submissions (even if a skeleton with proper but non-optimized output) before the final day (10/19). 
+This gives us a buffer to get back to you incase there is any error in compiling your code.
+
 ## Packagaes:
 
 `pip install -r requirements.txt`
 
-Or manually install `matplotlib` and `hps-nyu`
+Or
+
+`pip install matplotlib`
 
 ## Usage (Python):
 
-Place your logic in `my_solution()` on line 352 and the code should do the rest for you.
+Place your logic in `my_solution()` on line 376 and the code should do the rest for you.
 
 If you do not want to mess with the validator file, you are free to follow the approach below (for other languages)
 and you should be fine with using another .py file.
 
-NOTE: The readdata() return the list of **objects** and not a dictionary. 
+NOTE: The `readdata()` returns the list of **objects** and not a dictionary. 
 You can use `object.prettify()` to get the dictionary instead.
 
 ## For Languages other than python:
@@ -44,11 +65,11 @@ Hospital:x_coordinate,y_coordinate,num_ambulances
 ...
 Hospital:x_coordinate,y_coordinate,num_ambulances
 
-Ambulance: P1: (x_coordinate,y_coordinate) P2: (x_coordinate,y_coordinate) ... PN: (x_coordinate,y_coordinate)  
+Ambulance: H1: (start_x_coordinate,start_y_coordinate), P1: (x_coordinate,y_coordinate), P2: (x_coordinate,y_coordinate) ... PN: (x_coordinate,y_coordinate), H2: (end_x_coordinate,end_y_coordinate)  
 ...
-Ambulance: P1: (x_coordinate,y_coordinate) P2: (x_coordinate,y_coordinate) ... PN: (x_coordinate,y_coordinate)
+Ambulance: H1: (start_x_coordinate,start_y_coordinate), P1: (x_coordinate,y_coordinate) P2: (x_coordinate,y_coordinate) ... PN: (x_coordinate,y_coordinate), H2: (end_x_coordinate,end_y_coordinate)
 ```
-You can refer to the "sample_result.txt" to get the idea.
+You can refer to the "sample_result.txt" to get the idea. The sample result is NOT optimal by any means
 
 **Validation:** Once done with your code, you can then validate the result using the following:
 
@@ -58,7 +79,7 @@ You can refer to the "sample_result.txt" to get the idea.
 
 ## Plot:
 
-If you wish to disable the graph plot, simply comment the `plot()` on line 382
+If you wish to disable the graph plot, simply comment the `plot()` on last line of the code
 
 --------------------------------------------------------------------------
 ## Previous Readme by Yusuke Shinyama
