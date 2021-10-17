@@ -88,7 +88,7 @@ class Hospital:
         # t: time to take
         # note: we don't have to go back to the starting hospital
         # so go to the closest from the last student
-        t = 0
+        t = 1
         start = self
         for p in pers:
             t += take_time(start, p)
@@ -116,6 +116,7 @@ class Hospital:
 
         t += take_time(start, end_hospital)
 
+        self.amb_time.sort(reverse=True)
         # try to schedule from the busiest ambulance at the hospital.
         for (i, t0) in enumerate(self.amb_time):
             if not list(filter(lambda p: p.st < t0 + t, pers)): break
@@ -133,7 +134,6 @@ class Hospital:
         self.amb_time.pop(i)
 
         # keep it sorted.
-        self.amb_time.sort(reverse=True)
         for p in pers:
             p.rescued = True
         print('Rescued:', ' and '.join(map(str, pers)), 'taking', t, '|ended at hospital', end_hospital)
